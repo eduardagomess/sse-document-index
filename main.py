@@ -6,7 +6,7 @@ import time
 import pickle
 import csv
 
-TOTAL = 10  # total number of documents to create
+TOTAL = 100  # total number of documents to create
 BATCH_SIZE = 10_000  # number of documents per processing batch
 DOCUMENTS_FOLDER = "data/documents"  # folder where plaintext documents are stored
 ENCRYPTED_FOLDER = "data/encrypted_docs"  # folder where encrypted documents are saved
@@ -78,7 +78,7 @@ def main():
 
         T = client.build_trapdoor(q)
         start = time.time()
-        matches = server.search(T, client.K_priv, client.s)
+        matches = server.search(T, client.s)
         duration = time.time() - start
         search_duration = duration
 
@@ -100,7 +100,10 @@ def main():
             writer = csv.writer(f)
             if f.tell() == 0:  # if file is empty, write header
                 writer.writerow(["encrypt_time_sec", "index_time_sec", "search_time_sec"])
-            writer.writerow([total_encrypt_time, total_index_time, search_duration])
+            
+            # Format numbers to 3 decimal places
+            row = [f"{total_encrypt_time:.3f}", f"{total_index_time:.3f}", f"{search_duration:.3f}"]
+            writer.writerow(row)
 
 
 if __name__ == "__main__":
