@@ -35,21 +35,19 @@ def main():
         # generate documents
         generate_documents(current_batch_size, output_folder=DOCUMENTS_FOLDER)
 
-        # load documents
+        # docs is a dict with doc_id → (plaintext content, list of extracted tokens)
         docs = load_documents_from_folder(DOCUMENTS_FOLDER)
 
         # encrypt documents
         start_enc = time.time()
-        for doc_id, (text, _) in docs.items():
-            print(doc_id)
-            print((text, _))
-            encrypted = client.encrypt_document(doc_id, text, output_folder=ENCRYPTED_FOLDER)
+        for doc_id, (plaintext, _) in docs.items():
+            encrypted = client.encrypt_document(doc_id, plaintext, output_folder=ENCRYPTED_FOLDER)
             server.documents[doc_id] = encrypted
         end_enc = time.time()
         enc_time = end_enc - start_enc
         total_encrypt_time += enc_time
 
-        # 4. Index documents
+        # index documents
         start_idx = time.time()
         for doc_id, (_, tokens) in docs.items():
             index = client.create_index(doc_id, tokens)
@@ -58,11 +56,11 @@ def main():
         idx_time = end_idx - start_idx
         total_index_time += idx_time
 
-        # 5. Delete clear-text files to save disk space
+        # delete clear-text files to save disk space
         for f in os.listdir(DOCUMENTS_FOLDER):
             os.remove(os.path.join(DOCUMENTS_FOLDER, f))
 
-    # 6. Save full index to disk
+    # save full index to disk
     with open(INDEX_FILE, "wb") as f:
         pickle.dump(server.indices, f)
 
@@ -70,7 +68,7 @@ def main():
     print(f"Total encryption time: {total_encrypt_time:.2f} seconds")
     print(f"Total indexing time: {total_index_time:.2f} seconds")
 
-    # 7. Wait for user search
+    # wait for user search
     search_duration = None
 
     while True:
@@ -86,8 +84,16 @@ def main():
 
         if matches:
             print(f"Matching documents: {', '.join(matches)}")
+
+            # ask if the user wants to decrypt the documents
+            choice = input("Do you want to decrypt and view the matching documents? (y/n): ").strip().lower()
+            if choice == 'y':
+                for doc_id in matches:
+                    decrypted = client.decrypt_document(doc_id, input_folder=ENCRYPTED_FOLDER)
+                    print(f"\n🔓 Document {doc_id}:\n{decrypted}")
         else:
             print("No documents matched the search.")
+
         print(f"Search time: {duration:.4f} seconds")
 
         # Save final summary with search time
