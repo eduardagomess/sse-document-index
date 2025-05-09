@@ -85,12 +85,11 @@ def main():
         if matches:
             print(f"Matching documents: {', '.join(matches)}")
 
-            # ask if the user wants to decrypt the documents
             choice = input("Do you want to decrypt and view the matching documents? (y/n): ").strip().lower()
             if choice == 'y':
                 for doc_id in matches:
                     decrypted = client.decrypt_document(doc_id, input_folder=ENCRYPTED_FOLDER)
-                    print(f"\n🔓 Document {doc_id}:\n{decrypted}")
+                    print(f"Document {doc_id}:\n{decrypted}")
         else:
             print("No documents matched the search.")
 
