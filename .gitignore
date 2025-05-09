@@ -3,10 +3,6 @@ __pycache__/
 *.py[cod]
 *.pyo
 
-# Virtual environment directories
-venv/
-.env/
-
 # Sensitive or auto-generated data
 data/encrypted_docs/
 *.log
