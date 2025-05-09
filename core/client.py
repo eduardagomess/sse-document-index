@@ -24,6 +24,13 @@ class Client:
         with open(os.path.join(output_folder, f"{doc_id}.enc"), "wb") as f:
             f.write(encrypted)
         return encrypted
+    
+    def decrypt_document(self, doc_id, input_folder="data/encrypted_docs"):
+        file_path = os.path.join(input_folder, f"{doc_id}.enc")
+        with open(file_path, "rb") as f:
+            encrypted = f.read()
+        decrypted = self.cipher.decrypt(encrypted).decode()
+        return decrypted
 
     def create_index(self, D_id, words):
         index = SecureIndex(self.K_priv, self.bloom_size, self.r, self.s)
