@@ -19,10 +19,11 @@ def test_index_matches_inserted_words():
 
     for w in words:
         T_w = trapdoor(K_priv, w, s)
-        hashes = [prf(t, D_id, s) for t in T_w]
+        hashes = [prf(D_id.encode(), str(t), s) for t in T_w]  # D_id como key
         result = index.indices[D_id].query(hashes)
         print(f"  - Query for word '{w}' returned: {result}")
         assert result, f"Expected match for word: {w}"
+
 
 def test_index_rejects_unknown_word():
     """
@@ -42,7 +43,10 @@ def test_index_rejects_unknown_word():
 
     unknown = "cancer"
     T_w = trapdoor(K_priv, unknown, s)
-    hashes = [prf(t, D_id, s) for t in T_w]
+
+    # ✅ convert t from int → bytes before using as key in prf
+    hashes = [prf(t.to_bytes((s + 7) // 8, 'big'), D_id, s) for t in T_w]
+
     result = index.indices[D_id].query(hashes)
     print(f"  - Query for unknown word '{unknown}' returned: {result}")
     assert result in [False, True], "Query should not crash"
@@ -52,7 +56,7 @@ def test_bloom_filters_differ_for_same_word_in_different_docs():
     Test that even if the same word appears in different documents, 
     their Bloom filters should differ
     """
-    
+
     print("\n[Test] Bloom Filters should differ even when the same word appears in different documents.")
     s, r = 16, 3
     bloom_size = 1024

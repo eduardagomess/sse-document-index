@@ -23,7 +23,7 @@ def test_search_finds_word_in_document():
 
     # Search for the word "diabetes"
     T = client.build_trapdoor("diabetes")
-    result = server.search(T, client.K_priv, client.s)
+    result = server.search(T, client.s)
 
     print(f"  - Search result for 'diabetes': {result}")
     assert doc_id in result
@@ -53,7 +53,7 @@ def test_search_returns_multiple_matches():
 
     # Search for "dengue"
     T = client.build_trapdoor("dengue")
-    result = server.search(T, client.K_priv, client.s)
+    result = server.search(T, client.s)
 
     print(f"  - Search result for 'dengue': {result}")
     assert "doc1" in result and "doc2" in result
@@ -78,7 +78,40 @@ def test_search_returns_nothing_for_absent_word():
 
     # Try searching for a word that wasn't added
     T = client.build_trapdoor("covid")
-    result = server.search(T, client.K_priv, client.s)
+    result = server.search(T, client.s)
 
     print(f"  - Search result for 'covid': {result}")
     assert result == []
+
+
+def test_search_with_wrong_key_fails():
+    """
+    This test verifies that search using an incorrect secret key
+    does not return any results, ensuring that only authorized users
+    with the correct key can generate valid trapdoors for queries.
+    """
+
+    print("\n[Security Test] Search with wrong key should not return matches.")
+
+    from core.client import Client
+    from core.server import Server
+    from core.crypto import keygen, trapdoor
+
+    client = Client()
+    server = Server()
+
+    doc_id = "doc1"
+    content = "Name: Alice\nDisease: cancer"
+    tokens = ["Alice", "cancer"]
+
+    encrypted = client.encrypt_document(doc_id, content, output_folder="data/encrypted_docs")
+    index = client.create_index(doc_id, tokens)
+    server.store(doc_id, encrypted, index)
+
+    # Attacker generates a different key and trapdoor
+    fake_key = keygen(client.s, client.r)
+    fake_trap = trapdoor(fake_key, "cancer", client.s)
+
+    result = server.search(fake_trap, client.s)
+    print(f"  - Search result with wrong key: {result}")
+    assert doc_id not in result, "Search with wrong key should not match document"
