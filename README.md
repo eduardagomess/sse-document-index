@@ -74,3 +74,8 @@ This runs:
 - pytest — Python testing framework
 
 - Faker — Fake data generation (patients, diseases, etc.)
+
+## 📚 Reference
+
+Goh, E.-J. (2004). Secure Indexes.
+https://eprint.iacr.org/2003/216.pdf
