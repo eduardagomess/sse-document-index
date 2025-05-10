@@ -1,12 +1,14 @@
-# 🔐 Searchable Encryption System
+# 🔐 Document-Based Searchable Encryption System
 
-This implementation is based on the searchable encryption scheme described in:
+This project implements a **document-based searchable encryption scheme**, inspired by the construction in:
 
 **Secure Indexes**  
-Eu-Jin Goh  
+*Eu-Jin Goh*  
 [eu-jin@cs.stanford.edu](mailto:eujin@cs.stanford.edu)
 
-This paper introduces the concept of using Bloom Filters and pseudorandom functions to support efficient and secure keyword search over encrypted data. Our project adapts the construction and ideas from this work using modern cryptographic primitives such as HMAC-SHA256.
+The implemented model supports **searching for a single keyword at a time** over encrypted documents using **Bloom Filters** and **pseudorandom functions (PRFs)**. It ensures that searches can be performed without decrypting the content, and that the search tokens (trapdoors) reveal minimal information about the queried words.
+
+This implementation follows the structure proposed in Goh's paper and adapts it using modern cryptographic primitives like **HMAC-SHA256**, while maintaining the theoretical properties of **searchable symmetric encryption (SSE)**.
 
 ## Quick Setup
 
