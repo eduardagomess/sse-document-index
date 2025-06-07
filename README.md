@@ -27,6 +27,7 @@ This script will:
 
 - Set up your project to run immediately
 
+
 ## Run the system
 
 ```bash
@@ -49,6 +50,13 @@ Example Search Output
 Search word (or 'exit'): diabetes
 Matching documents: doc3, doc12, doc57
 Search time: 0.0021 seconds
+```
+
+##  Plotting Performance Charts
+To run a chart, simply execute the corresponding script with Python
+
+```bash
+python3 charts/search_analysis_with_proportion.py
 ```
 
 ## Technologies Used
