@@ -4,7 +4,7 @@ from core.index import SecureIndex
 import os
 
 class Client:
-    def __init__(self, s=16, r=3, bloom_size=2048):
+    def __init__(self, s=16, r=18, bloom_size=128):
         """
         Initializes the client:
         - Generates r secret keys of s bits (K_priv)

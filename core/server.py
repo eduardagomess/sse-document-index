@@ -24,11 +24,18 @@ class Server:
         - If so, includes the document ID in the results
         """
         results = []
+        positive_count = 0
+
         for D_id in self.indices:
             # apply PRF to each trapdoor value using the document ID
-            y = [prf(D_id.encode(), str(t), s) for t in T_w]
+            y = []
+            for t in T_w:
+                y_i = prf(D_id.encode(), str(t), s)
+                y.append(y_i)
+            
             bf = self.indices[D_id]
             # query the Bloom Filter with the computed hash positions
             if bf.query(y):
                 results.append(D_id)
+                positive_count += 1
         return results

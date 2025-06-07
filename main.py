@@ -5,106 +5,101 @@ import os
 import time
 import pickle
 import csv
+import gc  
+import statistics
 
-TOTAL = 100  # total number of documents to create
-BATCH_SIZE = 10_000  # number of documents per processing batch
-DOCUMENTS_FOLDER = "data/documents"  # folder where plaintext documents are stored
-ENCRYPTED_FOLDER = "data/encrypted_docs"  # folder where encrypted documents are saved
-INDEX_FILE = "data/index.pkl"  # path to the serialized index file
-SUMMARY_FILE = "data/summary_times.csv"  # file to store summary of processing times
-
+# Configuration
+TOTAL = 100 # Total number of documents to generate
+BATCH_SIZE = 10000 # Process documents in batches
+DOCUMENTS_FOLDER = "data/documents"
+ENCRYPTED_FOLDER = "data/encrypted_docs"
+SUMMARY_FILE = "data/summary_times.csv"
 
 def main():
+    # Create necessary folders
     os.makedirs(DOCUMENTS_FOLDER, exist_ok=True)
     os.makedirs(ENCRYPTED_FOLDER, exist_ok=True)
 
-    # instanciate entities
+    # Generate all documents at once
+    print( "Generating documents...")
+    generate_documents(TOTAL, output_folder=DOCUMENTS_FOLDER)
+
+    # Initialize client (for encryption and indexing) and server (for storage and search)
+    print( "Initializing client and server...")
     client = Client()
     server = Server()
 
-    # initialize time variables
     total_encrypt_time = 0
     total_index_time = 0
 
+    # Load all documents into memory
+    all_docs = load_documents_from_folder(DOCUMENTS_FOLDER)
+    all_doc_ids = list(all_docs.keys())
+
+    # Process in batches to avoid memory overload
     for i in range(0, TOTAL, BATCH_SIZE):
         current_batch_size = min(BATCH_SIZE, TOTAL - i)
         batch_num = (i // BATCH_SIZE) + 1
 
-        print(f"Processing batch {batch_num} (creating {current_batch_size} documents)")
+        print(f"Processing batch {batch_num} with {current_batch_size} documents")
 
-        # generate documents
-        generate_documents(current_batch_size, output_folder=DOCUMENTS_FOLDER)
+        batch_doc_ids = all_doc_ids[i:i+current_batch_size]
+        batch_docs = {doc_id: all_docs[doc_id] for doc_id in batch_doc_ids}
 
-        # docs is a dict with doc_id → (plaintext content, list of extracted tokens)
-        docs = load_documents_from_folder(DOCUMENTS_FOLDER)
-
-        # encrypt documents
-        start_enc = time.time()
-        for doc_id, (plaintext, _) in docs.items():
+        # Encrypt each document and store it
+        for doc_id, (plaintext, _) in batch_docs.items():
             encrypted = client.encrypt_document(doc_id, plaintext, output_folder=ENCRYPTED_FOLDER)
             server.documents[doc_id] = encrypted
-        end_enc = time.time()
-        enc_time = end_enc - start_enc
-        total_encrypt_time += enc_time
 
-        # index documents
+        # Create a secure index for each document
         start_idx = time.time()
-        for doc_id, (_, tokens) in docs.items():
+        for doc_id, (_, tokens) in batch_docs.items():
             index = client.create_index(doc_id, tokens)
             server.indices[doc_id] = index
-        end_idx = time.time()
-        idx_time = end_idx - start_idx
-        total_index_time += idx_time
+        total_index_time += time.time() - start_idx
 
-        # delete clear-text files to save disk space
-        for f in os.listdir(DOCUMENTS_FOLDER):
-            os.remove(os.path.join(DOCUMENTS_FOLDER, f))
-
-    # save full index to disk
-    with open(INDEX_FILE, "wb") as f:
-        pickle.dump(server.indices, f)
-
-    print("Processing completed!")
-    print(f"Total encryption time: {total_encrypt_time:.2f} seconds")
+    print("Processing completed")
     print(f"Total indexing time: {total_index_time:.2f} seconds")
-
-    # wait for user search
-    search_duration = None
 
     while True:
         q = input("Search word (or 'exit'): ").strip().lower()
         if q == 'exit':
             break
 
+        # Generate trapdoor for the keyword
         T = client.build_trapdoor(q)
-        start = time.time()
-        matches = server.search(T, client.s)
-        duration = time.time() - start
-        search_duration = duration
+        durations = []
 
+        # Perform the same search multiple times and calculate average time
+        for _ in range(50):
+            start = time.perf_counter()
+            matches = server.search(T, client.s)
+            durations.append(time.perf_counter() - start)
+
+        search_duration = statistics.mean(durations)
+
+        # Display matching documents
         if matches:
             print(f"Matching documents: {', '.join(matches)}")
 
-            choice = input("Do you want to decrypt and view the matching documents? (y/n): ").strip().lower()
-            if choice == 'y':
+            # Ask user if they want to decrypt and view them
+            view = input("Do you want to decrypt and view the matching documents? (yes/no): ").strip().lower()
+            if view == 'yes':
                 for doc_id in matches:
                     decrypted = client.decrypt_document(doc_id, input_folder=ENCRYPTED_FOLDER)
-                    print(f"Document {doc_id}:\n{decrypted}")
+                    print(f"\n📄 Document {doc_id} content:\n{'-'*40}\n{decrypted}\n{'-'*40}")
         else:
-            print("No documents matched the search.")
+            print("No documents matched.")
 
-        print(f"Search time: {duration:.4f} seconds")
+        print(f"Average search time: {search_duration:.6f} seconds")
 
-        # Save final summary with search time
+        # Save result to CSV
         with open(SUMMARY_FILE, "a", newline="") as f:
             writer = csv.writer(f)
-            if f.tell() == 0:  # if file is empty, write header
-                writer.writerow(["encrypt_time_sec", "index_time_sec", "search_time_sec"])
-            
-            # Format numbers to 3 decimal places
-            row = [f"{total_encrypt_time:.3f}", f"{total_index_time:.3f}", f"{search_duration:.3f}"]
+            if f.tell() == 0:
+                writer.writerow(["num_documents", "encrypt_time_sec", "index_time_sec", "search_time_sec"])
+            row = [TOTAL, f"{total_encrypt_time:.3f}", f"{total_index_time:.3f}", f"{search_duration:.3f}"]
             writer.writerow(row)
-
 
 if __name__ == "__main__":
     main()

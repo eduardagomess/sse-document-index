@@ -12,14 +12,15 @@ class BloomFilter:
             self.bit_array[h % self.size] = 1
 
     def query(self, hashes: list) -> bool:
+        all_bits_set = True
         for h in hashes:
-            pos = h % self.size  # get valid position in the bit array
+            pos = h % self.size
             if self.bit_array[pos] == 0:
-                return False  # if any bit is 0, the item is not present
-        return True  # all bits are 1 the item might be present
+                all_bits_set = False  # ainda assim continuamos verificando
+        return all_bits_set
 
 class SecureIndex:
-    def __init__(self, K_priv, bloom_size=2048, r=3, s=16):
+    def __init__(self, K_priv, bloom_size, r, s):
         self.K_priv = K_priv
         self.r = r
         self.s = s
@@ -35,6 +36,7 @@ class SecureIndex:
 
             hashes = []
             for x_i in trap:
+                # code for w_i is specific for the document D_id
                 y_i = prf(D_id.encode(), str(x_i), self.s)  # key = D_id, message = x_i
                 hashes.append(y_i)
 
