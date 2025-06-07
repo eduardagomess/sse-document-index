@@ -51,27 +51,11 @@ Matching documents: doc3, doc12, doc57
 Search time: 0.0021 seconds
 ```
 
-## Running Tests
-
-```bash
-PYTHONPATH=. pytest tests/
-```
-
-This runs:
-
-- test_crypto.py: unit tests for key generation and PRF
-
-- test_index.py: tests for secure index correctness
-
-- test_integration.py: full encryption + indexing + search validation
-
 ## Technologies Used
 
 - cryptography.fernet — AES-based symmetric encryption
 
 - HMAC + SHA256 — Pseudorandom Function (PRF)
-
-- pytest — Python testing framework
 
 - Faker — Fake data generation (patients, diseases, etc.)
 
