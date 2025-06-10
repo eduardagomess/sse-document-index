@@ -43,5 +43,5 @@ if __name__ == "__main__":
 
         # Write the header only if the file is empty
         if os.stat(CSV_OUTPUT).st_size == 0:
-            writer.writerow(["total_documents", "avg_search_time_sec"])
+            writer.writerow(["total_documents", "index_time_sec"])
         writer.writerows(results)
